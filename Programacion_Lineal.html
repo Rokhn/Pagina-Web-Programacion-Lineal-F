@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimizador de Flota (Programación Lineal)</title>
+    <!-- Cargar Tailwind CSS (Framework de diseño) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cargar Chart.js (Librería de gráficos) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Configuración de fuente Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos base adicionales */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Eliminar flechas de spinner en inputs numéricos para un look más limpio */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Asegurar contraste correcto en placeholders en modo oscuro */
+        ::placeholder {
+            color: #9ca3af; /* Tailwind gray-400 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col min-h-screen">
+
+    <!-- ENCABEZADO -->
+    <header class="bg-indigo-700 text-white p-6 shadow-md">
+        <div class="container mx-auto max-w-7xl">
+            <h1 class="text-3xl font-bold text-center">Optimizador de Flota</h1>
+            <p class="text-center text-indigo-100 text-lg mt-2">Minimización de Costos de Transporte mediante Programación Lineal</p>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="container mx-auto max-w-7xl p-4 md:p-8 mt-6 flex-grow">
+        <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- SECCIÓN 1: Formulario de Entrada de Datos -->
+            <div class="bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
+                <h2 class="text-2xl font-semibold text-indigo-400 border-b border-gray-700 pb-3 mb-6">Parámetros de Entrada</h2>
+                <form id="input-form" class="space-y-6">
+
+                    <!-- A. Selección de Unidades -->
+                    <div class="bg-gray-700/30 p-4 rounded-lg">
+                        <h3 class="text-lg font-medium text-gray-100 mb-3 flex items-center">
+                            <span class="bg-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">1</span>
+                            Unidades de Medida
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="unit-cargo" class="block text-sm font-medium text-gray-300 mb-1">Unidad de Carga</label>
+                                <select id="unit-cargo" class="w-full p-2.5 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                                    <option value="t">Toneladas (t)</option>
+                                    <option value="kg">Kilogramos (kg)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="unit-fuel" class="block text-sm font-medium text-gray-300 mb-1">Unidad de Combustible</label>
+                                <select id="unit-fuel" class="w-full p-2.5 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                                    <option value="L">Litros (L)</option>
+                                    <option value="gal">Galones (gal)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B. Datos Camión 1 -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-100 mb-3 flex items-center">
+                            <span class="bg-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">2</span>
+                            Camión Tipo 1 (Variable x₁)
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="c1" class="block text-sm text-gray-400 mb-1">Costo por viaje ($)</label>
+                                <input type="number" id="c1" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 50000">
+                            </div>
+                            <div>
+                                <label for="k1" class="block text-sm text-gray-400 mb-1">Capacidad carga</label>
+                                <input type="number" id="k1" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 10">
+                            </div>
+                            <div>
+                                <label for="f1" class="block text-sm text-gray-400 mb-1">Consumo comb.</label>
+                                <input type="number" id="f1" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 80">
+                            </div>
+                            <div>
+                                <label for="t1" class="block text-sm text-gray-400 mb-1">Tiempo viaje (h)</label>
+                                <input type="number" id="t1" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 4">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- C. Datos Camión 2 -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-100 mb-3 flex items-center">
+                            <span class="bg-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">3</span>
+                            Camión Tipo 2 (Variable x₂)
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="c2" class="block text-sm text-gray-400 mb-1">Costo por viaje ($)</label>
+                                <input type="number" id="c2" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 90000">
+                            </div>
+                            <div>
+                                <label for="k2" class="block text-sm text-gray-400 mb-1">Capacidad carga</label>
+                                <input type="number" id="k2" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 25">
+                            </div>
+                            <div>
+                                <label for="f2" class="block text-sm text-gray-400 mb-1">Consumo comb.</label>
+                                <input type="number" id="f2" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 150">
+                            </div>
+                            <div>
+                                <label for="t2" class="block text-sm text-gray-400 mb-1">Tiempo viaje (h)</label>
+                                <input type="number" id="t2" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 7">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- D. Restricciones Globales -->
+                    <div class="bg-indigo-900/20 p-4 rounded-lg border border-indigo-900/50">
+                        <h3 class="text-lg font-medium text-indigo-200 mb-3 flex items-center">
+                            <span class="bg-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2 text-white">4</span>
+                            Restricciones de la Jornada
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="Q" class="block text-sm font-medium text-indigo-300 mb-1">Meta Carga Total</label>
+                                <input type="number" id="Q" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-indigo-500/50 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 300">
+                            </div>
+                            <div>
+                                <label for="F" class="block text-sm font-medium text-indigo-300 mb-1">Límite Combustible</label>
+                                <input type="number" id="F" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-indigo-500/50 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 4000">
+                            </div>
+                            <div>
+                                <label for="T" class="block text-sm font-medium text-indigo-300 mb-1">Límite Tiempo (h)</label>
+                                <input type="number" id="T" min="0" step="any" required class="w-full p-2.5 bg-gray-700 border border-indigo-500/50 rounded-lg focus:ring-2 focus:ring-indigo-500 text-white" placeholder="Ej: 160">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Envío -->
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg text-lg mt-4">
+                        Calcular Solución Óptima
+                    </button>
+                </form>
+            </div>
+
+            <!-- SECCIÓN 2: Resultados y Gráfica -->
+            <div class="bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700 flex flex-col">
+                <h2 class="text-2xl font-semibold text-indigo-400 border-b border-gray-700 pb-3 mb-6">Análisis de Resultados</h2>
+                
+                <!-- Área de Mensajes (Errores/Advertencias) -->
+                <div id="message-box" class="mb-4 empty:hidden"></div>
+
+                <!-- Resumen del Modelo Matemático -->
+                <div id="solution-summary" class="mb-6 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                    <h3 class="text-sm uppercase tracking-wider text-gray-400 mb-3 font-semibold">Modelo Matemático Generado</h3>
+                    <div class="font-mono text-sm space-y-2">
+                        <div class="flex">
+                            <span class="text-indigo-400 w-24 shrink-0">Minimizar:</span>
+                            <span id="objective-fn" class="text-gray-200">C = c₁·x₁ + c₂·x₂</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-indigo-400 w-24 shrink-0">Sujeto a:</span>
+                            <div class="text-gray-300">
+                                <div id="constraint-cargo">k₁·x₁ + k₂·x₂ ≥ Q (Carga)</div>
+                                <div id="constraint-fuel">f₁·x₁ + f₂·x₂ ≤ F (Combustible)</div>
+                                <div id="constraint-time">t₁·x₁ + t₂·x₂ ≤ T (Tiempo)</div>
+                                <div>x₁, x₂ ≥ 0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Solución Óptima -->
+                <div id="optimal-solution" class="mb-6 hidden animate-fade-in">
+                    <div class="bg-green-900/30 border border-green-600/50 p-5 rounded-xl">
+                        <h3 class="text-green-400 font-semibold mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Solución Óptima Encontrada
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+                            <div class="bg-gray-900/50 p-3 rounded-lg">
+                                <span class="block text-sm text-gray-400 mb-1">Viajes Camión 1</span>
+                                <span id="sol-x1" class="text-2xl font-bold text-white">0.00</span>
+                            </div>
+                            <div class="bg-gray-900/50 p-3 rounded-lg">
+                                <span class="block text-sm text-gray-400 mb-1">Viajes Camión 2</span>
+                                <span id="sol-x2" class="text-2xl font-bold text-white">0.00</span>
+                            </div>
+                            <div class="bg-green-900/50 p-3 rounded-lg border border-green-700/50">
+                                <span class="block text-sm text-green-300 mb-1">Costo Mínimo Total</span>
+                                <span id="sol-cost" class="text-2xl font-bold text-green-400">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor de la Gráfica -->
+                <div class="flex-grow bg-gray-900/50 p-4 rounded-xl border border-gray-700 min-h-[400px] relative">
+                    <canvas id="lp-chart"></canvas>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="bg-gray-800 text-gray-400 py-6 text-center mt-12 border-t border-gray-700">
+        <p class="text-sm">
+            Desarrollado por: <span class="text-indigo-300 font-medium">Sebastián Andrés Brito Hernández</span> / <span class="text-indigo-300 font-medium">Marcelo Barraza C.</span>
+        </p>
+    </footer>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        // --- VARIABLES GLOBALES ---
+        let lpChartInstance = null;
+        const ctx = document.getElementById('lp-chart').getContext('2d');
+        
+        // Elementos del DOM
+        const form = document.getElementById('input-form');
+        const messageBox = document.getElementById('message-box');
+        const optimalSolutionDiv = document.getElementById('optimal-solution');
+        // Elementos de resumen
+        const objectiveFnEl = document.getElementById('objective-fn');
+        const constraintCargoEl = document.getElementById('constraint-cargo');
+        const constraintFuelEl = document.getElementById('constraint-fuel');
+        const constraintTimeEl = document.getElementById('constraint-time');
+        // Elementos de solución
+        const solX1El = document.getElementById('sol-x1');
+        const solX2El = document.getElementById('sol-x2');
+        const solCostEl = document.getElementById('sol-cost');
+
+        // Factores de conversión
+        const KG_TO_T = 1 / 1000;
+        const GAL_TO_L = 3.78541;
+
+        // --- EVENT LISTENERS ---
+        form.addEventListener('submit', handleCalculation);
+
+        // --- FUNCIÓN PRINCIPAL ---
+        function handleCalculation(e) {
+            e.preventDefault();
+            resetUI();
+
+            try {
+                // 1. Captura y normalización de datos
+                const params = getParams();
+                
+                // 2. Actualización del modelo visual
+                updateMathModelDisplay(params);
+
+                // 3. Ejecución del algoritmo Simplex gráfico
+                const solution = solveLinearProgram(params);
+
+                // 4. Presentación de resultados
+                renderResults(solution, params);
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // --- CAPA DE DATOS ---
+        function getParams() {
+            // Función auxiliar para obtener valor numérico
+            const num = (id) => {
+                const val = parseFloat(document.getElementById(id).value);
+                if (isNaN(val) || val < 0) throw new Error(`Valor inválido en campo: ${id}`);
+                return val;
+            };
+
+            const unitCargo = document.getElementById('unit-cargo').value;
+            const unitFuel = document.getElementById('unit-fuel').value;
+            
+            // Factores de normalización aplicados si es necesario
+            const cargoMult = unitCargo === 'kg' ? KG_TO_T : 1;
+            const fuelMult = unitFuel === 'gal' ? GAL_TO_L : 1;
+
+            return {
+                // Coeficientes Función Objetivo
+                c1: num('c1'), c2: num('c2'),
+                // Coeficientes Restricciones (normalizados a t y L)
+                k1: num('k1') * cargoMult, k2: num('k2') * cargoMult, Q: num('Q') * cargoMult,
+                f1: num('f1') * fuelMult,  f2: num('f2') * fuelMult,  F: num('F') * fuelMult,
+                t1: num('t1'),             t2: num('t2'),             T: num('T'),
+                // Metadatos para visualización
+                units: {
+                    cargo: unitCargo === 'kg' ? 't (norm.)' : 't',
+                    fuel: unitFuel === 'gal' ? 'L (norm.)' : 'L'
+                }
+            };
+        }
+
+        // --- CAPA LÓGICA (CORE) ---
+        function solveLinearProgram(p) {
+            // Definición de rectas (ax + by = c)
+            const lines = [
+                { a: p.k1, b: p.k2, c: p.Q, type: 'ge' }, // Carga (>=)
+                { a: p.f1, b: p.f2, c: p.F, type: 'le' }, // Combustible (<=)
+                { a: p.t1, b: p.t2, c: p.T, type: 'le' }, // Tiempo (<=)
+                { a: 1, b: 0, c: 0, type: 'ge' },         // Eje Y (x1 >= 0)
+                { a: 0, b: 1, c: 0, type: 'ge' }          // Eje X (x2 >= 0)
+            ];
+
+            // 1. Encontrar todas las intersecciones posibles
+            let intersections = [];
+            for (let i = 0; i < lines.length; i++) {
+                for (let j = i + 1; j < lines.length; j++) {
+                    const pt = getIntersection(lines[i], lines[j]);
+                    if (pt) intersections.push(pt);
+                }
+            }
+
+            // 2. Filtrar puntos dentro de la región factible
+            const feasibleVertices = intersections.filter(pt => isFeasible(pt, p));
+
+            // Si no hay vértices factibles, el problema no tiene solución
+            if (feasibleVertices.length === 0) return { feasible: false };
+
+            // 3. Evaluar función objetivo en vértices factibles
+            let minCost = Infinity;
+            let bestVertex = null;
+
+            feasibleVertices.forEach(v => {
+                const currentCost = p.c1 * v.x + p.c2 * v.y;
+                if (currentCost < minCost) {
+                    minCost = currentCost;
+                    bestVertex = v;
+                }
+            });
+
+            return {
+                feasible: true,
+                opt: bestVertex,
+                minCost: minCost,
+                region: uniqueVertices(feasibleVertices) // Eliminar duplicados para la gráfica
+            };
+        }
+
+        // --- FUNCIONES MATEMÁTICAS AUXILIARES ---
+        function getIntersection(l1, l2) {
+            const det = l1.a * l2.b - l2.a * l1.b;
+            if (Math.abs(det) < 1e-10) return null; // Paralelas
+            return {
+                x: (l2.b * l1.c - l1.b * l2.c) / det,
+                y: (l1.a * l2.c - l2.a * l1.c) / det
+            };
+        }
+
+        function isFeasible(pt, p) {
+            const TOL = 1e-9; // Tolerancia para errores de punto flotante
+            if (pt.x < -TOL || pt.y < -TOL) return false; // No negatividad
+            if (p.k1 * pt.x + p.k2 * pt.y < p.Q - TOL) return false; // Falla Carga
+            if (p.f1 * pt.x + p.f2 * pt.y > p.F + TOL) return false; // Falla Combustible
+            if (p.t1 * pt.x + p.t2 * pt.y > p.T + TOL) return false; // Falla Tiempo
+            return true;
+        }
+
+        function uniqueVertices(vertices) {
+            // Elimina vértices duplicados que ocurren cuando más de 2 líneas se cruzan en el mismo punto
+            return vertices.filter((v, i, self) => 
+                i === self.findIndex(t => Math.abs(t.x - v.x) < 1e-5 && Math.abs(t.y - v.y) < 1e-5)
+            );
+        }
+
+        // --- CAPA DE PRESENTACIÓN ---
+        function updateMathModelDisplay(p) {
+            const fmt = n => n.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+            objectiveFnEl.textContent = `C = ${fmt(p.c1)}·x₁ + ${fmt(p.c2)}·x₂`;
+            constraintCargoEl.textContent = `${fmt(p.k1)}·x₁ + ${fmt(p.k2)}·x₂ ≥ ${fmt(p.Q)} (${p.units.cargo})`;
+            constraintFuelEl.textContent = `${fmt(p.f1)}·x₁ + ${fmt(p.f2)}·x₂ ≤ ${fmt(p.F)} (${p.units.fuel})`;
+            constraintTimeEl.textContent = `${fmt(p.t1)}·x₁ + ${fmt(p.t2)}·x₂ ≤ ${fmt(p.T)} (h)`;
+        }
+
+        function renderResults(sol, p) {
+            if (!sol.feasible) {
+                showWarning("<strong>No existe solución factible.</strong><br>Las restricciones son demasiado estrictas. Intenta aumentar el combustible/tiempo disponible o reducir la meta de carga.");
+                return;
+            }
+
+            // Mostrar tarjeta de solución
+            optimalSolutionDiv.classList.remove('hidden');
+            solX1El.textContent = sol.opt.x.toFixed(2);
+            solX2El.textContent = sol.opt.y.toFixed(2);
+            solCostEl.textContent = `$${sol.minCost.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Renderizar gráfico
+            renderChart(sol, p);
+        }
+
+        function renderChart(sol, p) {
+            if (lpChartInstance) lpChartInstance.destroy();
+
+            // Ordenar vértices para formar un polígono cerrado correcto
+            const center = sol.region.reduce((acc, v) => ({x: acc.x + v.x, y: acc.y + v.y}), {x:0, y:0});
+            center.x /= sol.region.length;
+            center.y /= sol.region.length;
+            const sortedRegion = [...sol.region].sort((a, b) => 
+                Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x)
+            );
+
+            // Definir límites de ejes con un margen del 20%
+            const maxX = Math.max(...sol.region.map(v => v.x), p.Q/p.k1 || 0) * 1.2;
+            const maxY = Math.max(...sol.region.map(v => v.y), p.Q/p.k2 || 0) * 1.2;
+
+            // Generadores de puntos para líneas
+            const getLine = (a, b, c) => [
+                { x: 0, y: c/b },
+                { x: c/a, y: 0 },
+                { x: maxX, y: (c - a*maxX)/b }
+            ].filter(pt => pt.x >= 0 && pt.y >= 0 && isFinite(pt.x) && isFinite(pt.y));
+
+            lpChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Región Factible',
+                            data: sortedRegion,
+                            showLine: true,
+                            fill: true,
+                            backgroundColor: 'rgba(79, 70, 229, 0.2)', // Indigo-600 con transparencia
+                            borderColor: 'rgba(79, 70, 229, 0.5)',
+                            borderWidth: 1,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Solución Óptima',
+                            data: [{x: sol.opt.x, y: sol.opt.y}],
+                            backgroundColor: '#4ade80', // green-400
+                            pointRadius: 10,
+                            pointHoverRadius: 12,
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 3
+                        },
+                        // Líneas de restricción (solo para referencia visual)
+                        {
+                            type: 'line',
+                            label: 'Límite Carga (≥)',
+                            data: getLine(p.k1, p.k2, p.Q),
+                            borderColor: '#f87171', // red-400
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            type: 'line',
+                            label: 'Límite Combustible (≤)',
+                            data: getLine(p.f1, p.f2, p.F),
+                            borderColor: '#fbbf24', // amber-400
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            type: 'line',
+                            label: 'Límite Tiempo (≤)',
+                            data: getLine(p.t1, p.t2, p.T),
+                            borderColor: '#60a5fa', // blue-400
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: 20 },
+                    scales: {
+                        x: {
+                            min: 0, max: maxX,
+                            grid: { color: '#374151' }, // gray-700
+                            ticks: { color: '#9ca3af' }, // gray-400
+                            title: { display: true, text: 'Viajes Camión 1 (x₁)', color: '#e5e7eb' }
+                        },
+                        y: {
+                            min: 0, max: maxY,
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' },
+                            title: { display: true, text: 'Viajes Camión 2 (x₂)', color: '#e5e7eb' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#e5e7eb', usePointStyle: true }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.dataset.label}: (${ctx.parsed.x.toFixed(2)}, ${ctx.parsed.y.toFixed(2)})`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- UTILIDADES DE UI ---
+        function resetUI() {
+            messageBox.innerHTML = '';
+            optimalSolutionDiv.classList.add('hidden');
+            if (lpChartInstance) {
+                lpChartInstance.destroy();
+                lpChartInstance = null;
+            }
+        }
+
+        function showWarning(msg) {
+            messageBox.innerHTML = `<div class="p-4 bg-yellow-900/30 border border-yellow-600/50 text-yellow-200 rounded-lg flex items-start"><span class="text-2xl mr-3">⚠️</span><div>${msg}</div></div>`;
+        }
+
+        function showError(msg) {
+            messageBox.innerHTML = `<div class="p-4 bg-red-900/30 border border-red-600/50 text-red-200 rounded-lg flex items-start"><span class="text-2xl mr-3">🚫</span><div>${msg}</div></div>`;
+        }
+    </script>
+</body>
+</html>
